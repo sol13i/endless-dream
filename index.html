@@ -474,18 +474,18 @@ try{await gcol.add({n:n||"익명",m:m,at:Date.now()});$("gm").value="";gh.textCo
 catch(e){gh.textContent="저장하지 못했어요"}
 gs.disabled=false};
 
-// 로그인 창 (구글 / 익명)
+// 로그인 창 (주인 전용, 구글)
 (function(){
 if(!auth)return;
 var h=function(i){return document.getElementById(i)};
 var f=document.createElement("div");
 f.className="box fm";f.id="lgf";f.hidden=true;
-f.innerHTML='<h2 class="px">LOGIN</h2><div class="row" style="flex-wrap:wrap"><button class="bt px" id="lg_g">구글로 로그인</button><button class="bt g px" id="lg_a">익명으로 계속</button><button class="bt g px" id="lg_c">닫기</button></div><small id="lg_h"></small>';
+f.innerHTML='<h2 class="px">LOGIN</h2><p style="margin:0 0 12px;font-size:14px">주인만 로그인할 수 있어요.<br>구경은 로그인 없이 마음껏 하세요!</p><div class="row" style="flex-wrap:wrap"><button class="bt px" id="lg_g">구글로 로그인</button><button class="bt g px" id="lg_c">닫기</button></div><small id="lg_h"></small>';
 document.querySelector("main").prepend(f);
 function er(e){h("lg_h").textContent="로그인하지 못했어요: "+e.code}
 function done(){f.hidden=true}
 lg.onclick=function(){
-if(auth.currentUser&&!auth.currentUser.isAnonymous){auth.signOut();return}
+if(auth.currentUser){auth.signOut();return}
 h("lg_h").textContent="";f.hidden=false;f.scrollIntoView({block:"start"})};
 h("lg_c").onclick=done;
 h("lg_g").onclick=function(){
@@ -493,7 +493,6 @@ var p=new firebase.auth.GoogleAuthProvider();
 auth.signInWithPopup(p).then(done).catch(function(e){
 if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")auth.signInWithRedirect(p);
 else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")er(e)})};
-h("lg_a").onclick=function(){auth.signInAnonymously().then(done).catch(er)};
 })();
 </script>
 </body>
