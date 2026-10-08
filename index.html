@@ -116,6 +116,8 @@ textarea{height:80px;resize:none;margin-bottom:8px}
 .gb b{color:#5f9be0;font-size:13px}.gb small{color:var(--mu);margin-left:6px}
 .gb .lock{display:inline-block;margin-left:6px;padding:0 6px;font-size:11px;color:#fff;background:var(--pk)}
 .gb .ga{display:flex;gap:6px;margin-top:6px}
+.gb.rp{margin-left:22px;border-left:5px solid var(--b1);background:#f6faff}
+.gb.rp.sec{background:#fff8fb;border-left-color:var(--pk)}
 .gb textarea{height:70px;margin:6px 0}
 .gb label{font-size:12px;color:var(--mu)}
 .gb input[type=checkbox],.box input[type=checkbox]{width:auto;margin-right:6px}
@@ -513,28 +515,48 @@ if(b.dataset.nd){if(b.dataset.s!=="1"){b.dataset.s="1";b.textContent="정말 삭
 try{await ncol.doc(b.dataset.nd).delete()}catch(x){b.textContent="삭제하지 못했어요"}}});
 
 // ───── 방명록 ─────
-var gl=$("gl"),gh=$("gh"),gs=$("gs"),gcol=null,GD={},editG=null,gunsub=[];
+var gl=$("gl"),gh=$("gh"),gs=$("gs"),gcol=null,GD={},editG=null,replyG=null,gunsub=[];
 function gArr(){return Object.keys(GD).map(function(k){return GD[k]}).sort(function(a,b){return (b.at||0)-(a.at||0)})}
 function drawG(){
 var docs=gArr();
 $("gfix").hidden=!(owner&&docs.some(function(v){return v.p===undefined}));
 if(!docs.length){gl.innerHTML='<div class="em">첫 방명록을 남겨주세요</div>';return}
-gl.innerHTML=docs.map(function(v){
-var mine=!!(cu&&v.uid&&v.uid===cu.uid),canDel=owner||mine,dt=fdate(v.at),h;
+var keepE=$("ge_m")?$("ge_m").value:null,keepR=$("gr_m")?$("gr_m").value:null;
+var tops=docs.filter(function(v){return !v.r}),kids={};
+docs.slice().reverse().forEach(function(v){if(v.r)(kids[v.r]=kids[v.r]||[]).push(v)});
+function item(v,rep){
+var mine=!!(cu&&v.uid&&v.uid===cu.uid),canDel=owner||mine,dt=fdate(v.at),cl='gb'+(v.p?' sec':'')+(rep?' rp':'');
 if(editG===v.id&&mine){
-h='<div class="gb'+(v.p?' sec':'')+'"><b>'+esc(v.n||"익명")+'</b><small>'+dt+'</small><textarea id="ge_m" maxlength="200">'+esc(v.m)+'</textarea><label><input id="ge_p" type="checkbox"'+(v.p?' checked':'')+'>🔒 비밀글</label><div class="ga"><button class="bt px sm" data-gv="'+esc(v.id)+'">SAVE</button><button class="bt g px sm" data-gc="1">CANCEL</button></div></div>';
-return h}
-return '<div class="gb'+(v.p?' sec':'')+'"><b>'+esc(v.n||"익명")+'</b><small>'+dt+'</small>'+(v.p?'<span class="lock px">🔒 SECRET</span>':'')+'<br>'+br(v.m)+((mine||canDel)?'<div class="ga">'+(mine?'<button class="bt g px sm" data-ge="'+esc(v.id)+'">EDIT</button>':'')+(canDel?'<button class="bt d px sm" data-gd="'+esc(v.id)+'">DELETE</button>':'')+'</div>':'')+'</div>'}).join("")}
+return '<div class="'+cl+'"><b>'+esc(v.n||"익명")+'</b><small>'+dt+'</small><textarea id="ge_m" maxlength="200">'+esc(v.m)+'</textarea>'+(rep?'':'<label><input id="ge_p" type="checkbox"'+(v.p?' checked':'')+'>🔒 비밀글</label>')+'<div class="ga"><button class="bt px sm" data-gv="'+esc(v.id)+'">SAVE</button><button class="bt g px sm" data-gc="1">CANCEL</button></div></div>'}
+var act=(!rep&&cu?'<button class="bt g px sm" data-gr="'+esc(v.id)+'">REPLY</button>':'')+(mine?'<button class="bt g px sm" data-ge="'+esc(v.id)+'">EDIT</button>':'')+(canDel?'<button class="bt d px sm" data-gd="'+esc(v.id)+'">DELETE</button>':'');
+return '<div class="'+cl+'"><b>'+(rep?'↳ ':'')+esc(v.n||"익명")+'</b><small>'+dt+'</small>'+(v.p&&!rep?'<span class="lock px">🔒 SECRET</span>':'')+'<br>'+br(v.m)+(act?'<div class="ga">'+act+'</div>':'')+'</div>'}
+gl.innerHTML=tops.map(function(v){
+var h='<div class="gt">'+item(v,0)+(kids[v.id]||[]).map(function(r){return item(r,1)}).join("");
+if(replyG===v.id&&cu)h+='<div class="gb rp"><textarea id="gr_m" maxlength="200" placeholder="답글을 남겨주세요"></textarea><div class="ga"><button class="bt px sm" data-gsend="'+esc(v.id)+'">SEND</button><button class="bt g px sm" data-grc="1">CANCEL</button></div></div>';
+return h+'</div>'}).join("");
+if(keepE!==null&&$("ge_m"))$("ge_m").value=keepE;
+if(keepR!==null&&$("gr_m"))$("gr_m").value=keepR}
 gl.addEventListener("click",async function(e){
 var b=e.target.closest("button");if(!b||!gcol)return;
 var d=b.dataset;
-if(d.ge){editG=d.ge;drawG();return}
+if(d.ge){editG=d.ge;replyG=null;drawG();return}
 if(d.gc){editG=null;drawG();return}
+if(d.gr){replyG=d.gr;editG=null;drawG();if($("gr_m"))$("gr_m").focus();return}
+if(d.grc){replyG=null;drawG();return}
+if(d.gsend){var pa=GD[d.gsend],rm=$("gr_m").value.trim();if(!rm||!pa||!cu)return;b.disabled=true;
+var nk=($("gn").value.trim()||cu.displayName||"익명").slice(0,14);
+try{await gcol.add({n:nk,m:rm,at:Date.now(),uid:cu.uid,p:!!pa.p,r:pa.id,pu:pa.uid||""});replyG=null}catch(x){b.textContent="실패";b.disabled=false;return}
+drawG();return}
 if(d.gv){var m=$("ge_m").value.trim();if(!m)return;b.disabled=true;
-try{await gcol.doc(d.gv).update({m:m,p:$("ge_p").checked});editG=null}catch(x){b.textContent="실패";b.disabled=false;return}
+var cur=GD[d.gv]||{};
+try{await gcol.doc(d.gv).update({m:m,p:$("ge_p")?$("ge_p").checked:!!cur.p});editG=null}catch(x){b.textContent="실패";b.disabled=false;return}
 drawG();return}
 if(d.gd){if(d.s!=="1"){b.dataset.s="1";b.textContent="정말 삭제?";return}
-try{await gcol.doc(d.gd).delete()}catch(x){b.textContent="삭제하지 못했어요"}}});
+try{
+var bt=db.batch();bt.delete(gcol.doc(d.gd));
+// 주인은 달린 답글도 함께 지워요 (일반 사용자는 자기 답글만 지울 수 있어서 남은 답글은 숨겨져요)
+if(owner)gArr().forEach(function(v){if(v.r===d.gd)bt.delete(gcol.doc(v.id))});
+await bt.commit()}catch(x){b.textContent="삭제하지 못했어요"}}});
 // 로그인 상태에 맞춰 방명록을 구독해요. 주인은 전체, 그 외에는 공개글 + 내 글만 불러와요.
 function subG(){
 gunsub.forEach(function(f){f()});gunsub=[];GD={};
@@ -547,7 +569,9 @@ drawG()}}
 if(owner){gunsub.push(gcol.orderBy("at","desc").limit(300).onSnapshot(mix("a"),fail))}
 else{
 gunsub.push(gcol.where("p","==",false).limit(100).onSnapshot(mix("pub"),fail));
-if(cu)gunsub.push(gcol.where("uid","==",cu.uid).limit(100).onSnapshot(mix("my"),fail))}}
+if(cu){gunsub.push(gcol.where("uid","==",cu.uid).limit(100).onSnapshot(mix("my"),fail));
+// 내 비밀글에 달린 다른 사람(주인)의 답글
+gunsub.push(gcol.where("pu","==",cu.uid).limit(100).onSnapshot(mix("pu"),fail))}}}
 gs.onclick=async function(){
 var n=$("gn").value.trim(),m=$("gm").value.trim();
 if(!cu){gh.textContent="로그인이 필요해요";return}
