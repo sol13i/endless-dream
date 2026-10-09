@@ -451,7 +451,7 @@ var mx=C.reduce(function(m,c){return Math.max(m,c.o||0)},0);
 var d={n:n,w:$("f_w").value.trim(),l:$("f_l").value.trim(),t:$("f_t").value.split(",").map(function(t){return t.trim().replace(/^#/,"")}).filter(Boolean),f:$("f_f").value.trim(),d:$("f_d").value.trim(),u:$("f_u").value.trim(),nw:$("f_x").checked,o:old?old.o:mx+1};
 if(img)d.i=img;else if(old&&old.i)d.i=old.i;
 d.wv=$("f_wv").value.trim();d.it=$("f_in").value.trim();d.cm=$("f_cm").value.trim();
-d.ls=$("f_ls").value.split("\n").map(function(s){var a=s.split("|"),u=a.pop().trim(),n=a.join("|").trim();return /^https?:\/\//.test(u)?[n||"링크",u]:null}).filter(Boolean);
+d.ls=$("f_ls").value.split("\n").map(function(s){var a=s.split("|"),u=a.pop().trim(),n=a.join("|").trim();return /^https?:\/\//.test(u)?{n:n||"링크",u:u}:null}).filter(Boolean);
 this.disabled=true;
 try{
 if(!$("f_sd").checked){
@@ -531,7 +531,7 @@ if(b.dataset.nd){if(b.dataset.s!=="1"){b.dataset.s="1";b.textContent="정말 삭
 try{await ncol.doc(b.dataset.nd).delete()}catch(x){b.textContent="삭제하지 못했어요"}}});
 
 // ───── 캐릭터 상세: 추가 정보 · 이미지 갤러리 · 댓글 ─────
-function lnks(c){return c.ls||(c.x?[[c.x[1],c.x[0]]]:[])}
+function lnks(c){return c.ls?c.ls.map(function(o){return [o.n,o.u]}):(c.x?[[c.x[1],c.x[0]]]:[])}
 function sec(t,v){return v?'<div class="sec2"><h3 class="px">'+t+'</h3><p>'+br(v)+'</p></div>':''}
 function detailStop(){dun.forEach(function(f){f()});dun=[]}
 function tl(s){return s.split(",").map(function(t){return t.trim().replace(/^#/,"")}).filter(Boolean)}
