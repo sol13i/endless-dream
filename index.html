@@ -115,7 +115,7 @@ textarea{height:80px;resize:none;margin-bottom:8px}
 .gb.sec{background:#fff8fb;border-color:var(--pk)}
 .gb b{color:#5f9be0;font-size:13px}.gb small{color:var(--mu);margin-left:6px}
 .gb .lock{display:inline-block;margin-left:6px;padding:0 6px;font-size:11px;color:#fff;background:var(--pk)}
-.gb .ga{display:flex;gap:6px;margin-top:6px}
+.gb .ga{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .gb.rp{margin-left:22px;border-left:5px solid var(--b1);background:#f6faff}
 .gb.rp.sec{background:#fff8fb;border-left-color:var(--pk)}
 .gb textarea{height:70px;margin:6px 0}
@@ -128,6 +128,15 @@ textarea{height:80px;resize:none;margin-bottom:8px}
 .cf .cd p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:3em}
 .cf .cd b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cf img{-webkit-user-drag:none;pointer-events:none}
+/* 캐릭터 상세 추가 */
+.sec2{margin:14px 0 0}.sec2 h3{margin:0 0 2px;font-size:14px;color:#5f9be0}.sec2 p{margin:0;font-size:14px}
+details.gal{margin:16px 0 0;border:2px solid var(--b3);background:#f6faff;padding:8px 12px}
+details.gal summary{cursor:pointer;font-size:14px}
+.gg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.gi{display:block;width:100%;aspect-ratio:1;border:2px solid var(--b1);background:#fff;padding:0;cursor:pointer;overflow:hidden}
+.gi img{width:100%;height:100%;object-fit:cover}
+.lb{position:fixed;inset:0;z-index:50;background:rgba(30,50,80,.88);display:grid;place-items:center;padding:16px;cursor:pointer}
+.lb img{max-width:100%;max-height:85vh;border:3px solid #fff}
 @media(prefers-reduced-motion:reduce){.cd:hover{transform:none}.trk{scroll-behavior:auto}.cf .cd{transition:none}}
 </style>
 </head>
@@ -137,7 +146,7 @@ textarea{height:80px;resize:none;margin-bottom:8px}
 <main>
 
 <div class="box fm" id="lgf" hidden><h2 class="px">LOGIN</h2>
-<p style="margin:0 0 12px;font-size:14px">구글 계정으로 로그인하면 방명록을 남기고, 내가 쓴 글을 수정·삭제·비밀글로 바꿀 수 있어요.<br>구경은 로그인 없이 마음껏 하세요!</p>
+<p style="margin:0 0 12px;font-size:14px">구글 계정으로 로그인하면 방명록과 캐릭터 댓글을 남기고, 내가 쓴 글을 수정·삭제·비밀글로 바꿀 수 있어요.<br>구경은 로그인 없이 마음껏 하세요!</p>
 <div class="row" style="flex-wrap:wrap"><button class="bt px" id="lg_g">구글로 로그인</button><button class="bt g px" id="lg_c">닫기</button></div><small id="lg_h"></small></div>
 
 <section class="pg" id="home">
@@ -176,8 +185,12 @@ textarea{height:80px;resize:none;margin-bottom:8px}
 <label for="f_t">캐릭터 태그 (쉼표로 구분)</label><input id="f_t" maxlength="120" placeholder="로코, 동거, 순애">
 <label for="f_f">나이·키 등 한 줄 정보</label><input id="f_f" maxlength="60" placeholder="19세 남성 · 180cm">
 <label for="f_d">소개</label><textarea id="f_d" maxlength="600"></textarea>
+<label for="f_wv">세계관 설명 (상세 페이지에 표시)</label><textarea id="f_wv" maxlength="1500" style="height:110px"></textarea>
+<label for="f_in">도입부</label><textarea id="f_in" maxlength="1500" style="height:110px"></textarea>
+<label for="f_cm">제작자 코멘트</label><textarea id="f_cm" maxlength="1500" style="height:110px"></textarea>
 <label for="f_u">로판 캐릭터 링크</label><input id="f_u" maxlength="200" placeholder="https://rofan.ai/character/...">
-<label for="f_i">이미지 (선택)</label><input id="f_i" type="file" accept="image/*"><img class="pv" id="pv" alt="" hidden>
+<label for="f_ls">외부 링크 (한 줄에 하나, 형식: 버튼이름 | 주소)</label><textarea id="f_ls" maxlength="800" placeholder="자세한 설정 보기 | https://..." style="height:80px"></textarea>
+<label for="f_i">대표 이미지 (선택, 추가 이미지는 상세 페이지의 IMAGES에서 올려요)</label><input id="f_i" type="file" accept="image/*"><img class="pv" id="pv" alt="" hidden>
 <label for="f_sn">테마곡 제목 (선택)</label><input id="f_sn" maxlength="80" placeholder="곡 제목 - 가수">
 <label for="f_sl">테마곡 링크 (유튜브 또는 mp3 주소)</label><input id="f_sl" maxlength="400" placeholder="https://youtu.be/... 또는 https://.../song.mp3">
 <label for="f_sf">또는 mp3 파일 올리기 (15MB 이하, 파일을 고르면 링크보다 우선해요)</label><input id="f_sf" type="file" accept="audio/*,.mp3">
@@ -375,11 +388,12 @@ gr.onclick=go;
 q.oninput=list;
 
 // ───── 페이지 전환 ─────
-function route(keep){
+var dun=[];
+function route(keep){detailStop();
 var h=location.hash.slice(1),k=h;
 if(h.indexOf("c/")===0){k="detail";var id=h.slice(2),c=C.filter(function(x){return x.id===id})[0];
 if(c){var el=$("detail");
-el.innerHTML='<button class="bc" id="bk">‹ 목록으로</button><div class="box dt">'+stk("bf",4,"right:-6px;top:-12px;--r:12deg")+'<div class="th">'+pic(c,9)+'</div><small class="px" style="color:var(--mu)">'+esc(c.w)+'</small><h2 class="px">'+esc(c.n)+'</h2><p class="ln">'+esc(c.l)+'</p><p class="if">'+esc(c.f)+'</p><div class="chips" style="margin-bottom:12px">'+(c.t||[]).map(function(t){return '<button class="chip" data-t="'+esc(t)+'">#'+esc(t)+'</button>'}).join("")+'</div><p>'+esc(c.d)+'</p>'+songHtml(c)+'<div class="row" style="margin-top:14px;flex-wrap:wrap">'+(safe(c.u)?'<a class="go px" href="'+safe(c.u)+'" target="_blank" rel="noopener noreferrer">로판에서 만나기</a>':'')+(c.x&&safe(c.x[0])?'<a class="go px" href="'+safe(c.x[0])+'" target="_blank" rel="noopener noreferrer">'+esc(c.x[1])+'</a>':'')+(owner?'<button class="bt g px" id="ed">EDIT</button><button class="bt d px" id="dl">DELETE</button>':'')+'</div></div>';
+el.innerHTML='<button class="bc" id="bk">‹ 목록으로</button><div class="box dt">'+stk("bf",4,"right:-6px;top:-12px;--r:12deg")+'<div class="th">'+pic(c,9)+'</div><small class="px" style="color:var(--mu)">'+esc(c.w)+'</small><h2 class="px">'+esc(c.n)+'</h2><p class="ln">'+esc(c.l)+'</p><p class="if">'+esc(c.f)+'</p><div class="chips" style="margin-bottom:12px">'+(c.t||[]).map(function(t){return '<button class="chip" data-t="'+esc(t)+'">#'+esc(t)+'</button>'}).join("")+'</div><p>'+esc(c.d)+'</p>'+sec("세계관",c.wv)+sec("도입부",c.it)+sec("코멘트",c.cm)+songHtml(c)+'<details class="gal"><summary class="px">📷 IMAGES</summary><div id="galb"></div></details><div class="row" style="margin-top:14px;flex-wrap:wrap">'+(safe(c.u)?'<a class="go px" href="'+safe(c.u)+'" target="_blank" rel="noopener noreferrer">로판에서 만나기</a>':'')+lnks(c).map(function(p){return safe(p[1])?'<a class="go px" href="'+safe(p[1])+'" target="_blank" rel="noopener noreferrer">'+esc(p[0])+'</a>':''}).join("")+(owner?'<button class="bt g px" id="ed">EDIT</button><button class="bt d px" id="dl">DELETE</button>':'')+'</div></div><div class="box"><h2 class="px">COMMENTS</h2><div id="cc"></div></div>';detailInit(c);
 $("bk").onclick=function(){history.back()};
 el.onclick=function(e){var t=e.target.dataset&&e.target.dataset.t;if(t){on=[t];q.value="";tagBtns();list();location.hash="archive"}};
 var ed=$("ed");
@@ -406,6 +420,7 @@ $("ft").textContent=c?"EDIT CHARACTER":"NEW CHARACTER";
 $("f_n").value=c?c.n:"";$("f_w").value=c?c.w:"";$("f_l").value=c?c.l:"";
 $("f_t").value=c?(c.t||[]).join(", "):"";$("f_f").value=c?c.f||"":"";$("f_d").value=c?c.d||"":"";$("f_u").value=c?c.u||"":"";
 $("f_x").checked=c?!!c.nw:true;$("f_i").value="";
+$("f_wv").value=c?c.wv||"":"";$("f_in").value=c?c.it||"":"";$("f_cm").value=c?c.cm||"":"";$("f_ls").value=c?lnks(c).map(function(p){return p[0]+" | "+p[1]}).join("\n"):"";
 $("f_sn").value=c&&c.mn?c.mn:"";$("f_sl").value=c&&c.m&&c.mt!=="file"?c.m:"";$("f_sf").value="";$("f_sd").checked=false;
 $("f_sdl").hidden=!oldSong;
 var sc=$("f_sc");sc.hidden=!(oldSong&&oldSong.mt==="file");sc.textContent="현재 업로드된 mp3가 있어요. 새 파일을 고르거나 링크를 적으면 교체돼요.";
@@ -435,7 +450,8 @@ var old=editId?C.filter(function(x){return x.id===editId})[0]:null;
 var mx=C.reduce(function(m,c){return Math.max(m,c.o||0)},0);
 var d={n:n,w:$("f_w").value.trim(),l:$("f_l").value.trim(),t:$("f_t").value.split(",").map(function(t){return t.trim().replace(/^#/,"")}).filter(Boolean),f:$("f_f").value.trim(),d:$("f_d").value.trim(),u:$("f_u").value.trim(),nw:$("f_x").checked,o:old?old.o:mx+1};
 if(img)d.i=img;else if(old&&old.i)d.i=old.i;
-if(old&&old.x)d.x=old.x;
+d.wv=$("f_wv").value.trim();d.it=$("f_in").value.trim();d.cm=$("f_cm").value.trim();
+d.ls=$("f_ls").value.split("\n").map(function(s){var a=s.split("|"),u=a.pop().trim(),n=a.join("|").trim();return /^https?:\/\//.test(u)?[n||"링크",u]:null}).filter(Boolean);
 this.disabled=true;
 try{
 if(!$("f_sd").checked){
@@ -514,6 +530,72 @@ if(b.dataset.ne){openNotice(NL.filter(function(x){return x.id===b.dataset.ne})[0
 if(b.dataset.nd){if(b.dataset.s!=="1"){b.dataset.s="1";b.textContent="정말 삭제?";return}
 try{await ncol.doc(b.dataset.nd).delete()}catch(x){b.textContent="삭제하지 못했어요"}}});
 
+// ───── 캐릭터 상세: 추가 정보 · 이미지 갤러리 · 댓글 ─────
+function lnks(c){return c.ls||(c.x?[[c.x[1],c.x[0]]]:[])}
+function sec(t,v){return v?'<div class="sec2"><h3 class="px">'+t+'</h3><p>'+br(v)+'</p></div>':''}
+function detailStop(){dun.forEach(function(f){f()});dun=[]}
+function tl(s){return s.split(",").map(function(t){return t.trim().replace(/^#/,"")}).filter(Boolean)}
+function shrink(f,mw){return new Promise(function(ok,no){var im=new Image,u=URL.createObjectURL(f);im.onload=function(){var w=Math.min(im.width,mw),h=Math.round(im.height*w/im.width),cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(im,0,0,w,h);URL.revokeObjectURL(u);ok(cv.toDataURL("image/jpeg",.8))};im.onerror=no;im.src=u})}
+var GI=[],gtag=null;
+function gdraw(){var b=$("galb");if(!b)return;
+var ts=[];GI.forEach(function(g){(g.t||[]).forEach(function(t){if(ts.indexOf(t)<0)ts.push(t)})});
+if(gtag&&ts.indexOf(gtag)<0)gtag=null;
+var v=GI.filter(function(g){return !gtag||(g.t||[]).indexOf(gtag)>-1});
+b.innerHTML=(owner?'<div class="fm"><input id="gi_t" placeholder="태그 (쉼표로 구분, 올리는 사진 전부에 적용)"><input id="gi_f" type="file" accept="image/*" multiple style="margin-top:6px"><div class="row" style="margin-top:6px"><button class="bt px sm" id="gi_u">UPLOAD</button><small id="gi_h"></small></div></div>':'')
++(ts.length?'<div class="chips" style="margin-top:10px"><button class="chip'+(gtag?'':' on')+'" data-gt="">전체</button>'+ts.map(function(t){return '<button class="chip'+(t===gtag?' on':'')+'" data-gt="'+esc(t)+'">#'+esc(t)+'</button>'}).join("")+'</div>':'')
++(v.length?'<div class="gg">'+v.map(function(g){return '<div><button class="gi" data-lb="'+esc(g.id)+'" aria-label="이미지 크게 보기"><img alt="" loading="lazy" src="'+g.i+'"></button>'+(owner?'<div class="ga" style="display:flex;gap:4px;margin-top:3px"><button class="bt g px sm" data-gte="'+esc(g.id)+'">TAG</button><button class="bt d px sm" data-gdl="'+esc(g.id)+'">DEL</button></div>':'')+'<small style="color:var(--mu);font-size:11px">'+(g.t||[]).map(function(t){return "#"+esc(t)}).join(" ")+'</small></div>'}).join("")+'</div>':'<div class="em">'+(GI.length?'해당 태그의 이미지가 없어요':'아직 이미지가 없어요')+'</div>')}
+function detailInit(c){GI=[];gtag=null;gdraw();
+if(db){var gc=col.doc(c.id).collection("imgs");
+dun.push(gc.orderBy("at").onSnapshot(function(s){GI=s.docs.map(function(d){return Object.assign({id:d.id},d.data())}).filter(function(g){return g.i&&g.i.indexOf("data:image/")===0});gdraw()},function(){}));
+$("galb").onclick=async function(e){var t=e.target.closest("button");if(!t)return;var d=t.dataset;
+function f(i){return GI.filter(function(x){return x.id===i})[0]}
+if(d.gt!==undefined){gtag=d.gt||null;gdraw();return}
+if(d.lb){var g=f(d.lb);if(g){var o=document.createElement("div");o.className="lb";o.innerHTML='<img alt="" src="'+g.i+'">';o.onclick=function(){o.remove()};document.body.appendChild(o)}return}
+try{
+if(d.gte){var g2=f(d.gte),n=prompt("태그 (쉼표로 구분)",(g2.t||[]).join(", "));if(n!==null)await gc.doc(d.gte).update({t:tl(n)});return}
+if(d.gdl){if(d.s!=="1"){t.dataset.s="1";t.textContent="정말?";return}await gc.doc(d.gdl).delete();return}
+if(t.id==="gi_u"){var fs=$("gi_f").files,h=$("gi_h"),tgs=tl($("gi_t").value);if(!fs.length){h.textContent="사진을 골라주세요";return}
+t.disabled=true;for(var i=0;i<fs.length;i++){h.textContent="올리는 중 "+(i+1)+"/"+fs.length;await gc.add({i:await shrink(fs[i],800),t:tgs,at:Date.now()+i})}
+h.textContent="완료";t.disabled=false}
+}catch(x){alert("처리하지 못했어요")}}}
+cbook(c.id)}
+var CD={},ccol=null,ceG=null,crG=null;
+function cdraw(){var L=$("cl");if(!L)return;
+var ds=Object.keys(CD).map(function(k){return CD[k]}).sort(function(a,b){return (b.at||0)-(a.at||0)}),kids={};
+if(!ds.length){L.innerHTML='<div class="em">첫 댓글을 남겨주세요</div>';return}
+var kE=$("ce_m")?$("ce_m").value:null,kR=$("cr_m")?$("cr_m").value:null;
+ds.slice().reverse().forEach(function(v){if(v.r)(kids[v.r]=kids[v.r]||[]).push(v)});
+function it(v,rep){var mine=!!(cu&&v.uid&&v.uid===cu.uid),dt=fdate(v.at),cl='gb'+(v.p?' sec':'')+(rep?' rp':'');
+if(ceG===v.id&&mine)return '<div class="'+cl+'"><b>'+esc(v.n||"익명")+'</b><small>'+dt+'</small><textarea id="ce_m" maxlength="300">'+esc(v.m)+'</textarea>'+(rep?'':'<label><input id="ce_p" type="checkbox"'+(v.p?' checked':'')+'>🔒 비밀글</label>')+'<div class="ga"><button class="bt px sm" data-cv="'+esc(v.id)+'">SAVE</button><button class="bt g px sm" data-cc="1">CANCEL</button></div></div>';
+var a=(!rep&&cu?'<button class="bt g px sm" data-cr="'+esc(v.id)+'">REPLY</button>':'')+(mine?'<button class="bt g px sm" data-ce="'+esc(v.id)+'">EDIT</button>':'')+(owner&&!rep?'<button class="bt g px sm" data-cp="'+esc(v.id)+'">'+(v.p?'공개로':'비밀로')+'</button>':'')+(owner||mine?'<button class="bt d px sm" data-cd="'+esc(v.id)+'">DELETE</button>':'');
+return '<div class="'+cl+'"><b>'+(rep?'↳ ':'')+esc(v.n||"익명")+'</b><small>'+dt+'</small>'+(v.p&&!rep?'<span class="lock px">🔒 SECRET</span>':'')+'<br>'+br(v.m)+(a?'<div class="ga">'+a+'</div>':'')+'</div>'}
+L.innerHTML=ds.filter(function(v){return !v.r}).map(function(v){var h='<div>'+it(v,0)+(kids[v.id]||[]).map(function(r){return it(r,1)}).join("");
+if(crG===v.id&&cu)h+='<div class="gb rp"><textarea id="cr_m" maxlength="300" placeholder="답글을 남겨주세요"></textarea><div class="ga"><button class="bt px sm" data-cs="'+esc(v.id)+'">SEND</button><button class="bt g px sm" data-crc="1">CANCEL</button></div></div>';return h+'</div>'}).join("");
+if(kE!==null&&$("ce_m"))$("ce_m").value=kE;if(kR!==null&&$("cr_m"))$("cr_m").value=kR}
+function cbook(cid){CD={};ceG=null;crG=null;var box=$("cc");if(!box||!db)return;ccol=db.collection("ccomments");
+box.innerHTML=(cu?'<div class="fm"><input id="cn" maxlength="14" placeholder="닉네임" value="'+esc((cu.displayName||"").slice(0,14))+'" style="margin-bottom:8px"><textarea id="cm" maxlength="300" placeholder="이 캐릭터를 플레이한 후기를 남겨주세요"></textarea><label style="display:block;font-size:13px;margin-bottom:8px"><input id="cp" type="checkbox">🔒 비밀글 (나와 주인만 볼 수 있어요)</label><div class="row"><button class="bt px" id="cs">SEND</button><small id="ch"></small></div></div>':'<p style="font-size:14px;margin:0 0 10px">댓글은 구글 로그인 후 남길 수 있어요.</p><button class="bt px" id="cin">LOGIN</button>')+'<div id="cl" style="margin-top:12px"><div class="em">불러오는 중이에요</div></div>';
+if($("cin"))$("cin").onclick=showLogin;
+if($("cs"))$("cs").onclick=async function(){var m=$("cm").value.trim(),h=$("ch");if(!m){h.textContent="내용을 적어주세요";return}this.disabled=true;
+try{await ccol.add({cid:cid,n:$("cn").value.trim()||"익명",m:m,at:Date.now(),uid:cu.uid,p:$("cp").checked});$("cm").value="";$("cp").checked=false;h.textContent="남겼어요"}catch(x){h.textContent="저장하지 못했어요"}this.disabled=false};
+$("cl").onclick=async function(e){var b=e.target.closest("button");if(!b)return;var d=b.dataset;
+if(d.ce){ceG=d.ce;crG=null;cdraw();return}
+if(d.cc){ceG=null;cdraw();return}
+if(d.cr){crG=d.cr;ceG=null;cdraw();if($("cr_m"))$("cr_m").focus();return}
+if(d.crc){crG=null;cdraw();return}
+try{
+if(d.cs){var pa=CD[d.cs],m=$("cr_m").value.trim();if(!m||!pa||!cu)return;b.disabled=true;
+await ccol.add({cid:cid,n:(($("cn")&&$("cn").value.trim())||cu.displayName||"익명").slice(0,14),m:m,at:Date.now(),uid:cu.uid,p:!!pa.p,r:pa.id,pu:pa.uid||""});crG=null}
+else if(d.cv){var m2=$("ce_m").value.trim();if(!m2)return;b.disabled=true;await ccol.doc(d.cv).update({m:m2,p:$("ce_p")?$("ce_p").checked:!!CD[d.cv].p});ceG=null}
+else if(d.cp){var pv=CD[d.cp],np=!pv.p,w=db.batch();w.update(ccol.doc(pv.id),{p:np});Object.keys(CD).forEach(function(k){if(CD[k].r===pv.id)w.update(ccol.doc(k),{p:np})});await w.commit()}
+else if(d.cd){if(d.s!=="1"){b.dataset.s="1";b.textContent="정말 삭제?";return}var w3=db.batch();w3.delete(ccol.doc(d.cd));if(owner)Object.keys(CD).forEach(function(k){if(CD[k].r===d.cd)w3.delete(ccol.doc(k))});await w3.commit()}
+}catch(x){b.textContent="실패";b.disabled=false;return}cdraw()};
+function fe(){$("cl").innerHTML='<div class="em">댓글을 불러오지 못했어요.</div>'}
+function mixc(pre){return function(s){Object.keys(CD).forEach(function(k){if(CD[k]._s===pre)delete CD[k]});s.docs.forEach(function(d){CD[d.id]=Object.assign({id:d.id,_s:pre},d.data())});cdraw()}}
+var cq=ccol.where("cid","==",cid);
+if(owner)dun.push(cq.limit(300).onSnapshot(mixc("a"),fe));
+else{dun.push(cq.where("p","==",false).limit(100).onSnapshot(mixc("pub"),fe));
+if(cu){dun.push(cq.where("uid","==",cu.uid).limit(100).onSnapshot(mixc("my"),fe));dun.push(cq.where("pu","==",cu.uid).limit(100).onSnapshot(mixc("pu"),fe))}}}
+
 // ───── 방명록 ─────
 var gl=$("gl"),gh=$("gh"),gs=$("gs"),gcol=null,GD={},editG=null,replyG=null,gunsub=[];
 function gArr(){return Object.keys(GD).map(function(k){return GD[k]}).sort(function(a,b){return (b.at||0)-(a.at||0)})}
@@ -528,7 +610,7 @@ function item(v,rep){
 var mine=!!(cu&&v.uid&&v.uid===cu.uid),canDel=owner||mine,dt=fdate(v.at),cl='gb'+(v.p?' sec':'')+(rep?' rp':'');
 if(editG===v.id&&mine){
 return '<div class="'+cl+'"><b>'+esc(v.n||"익명")+'</b><small>'+dt+'</small><textarea id="ge_m" maxlength="200">'+esc(v.m)+'</textarea>'+(rep?'':'<label><input id="ge_p" type="checkbox"'+(v.p?' checked':'')+'>🔒 비밀글</label>')+'<div class="ga"><button class="bt px sm" data-gv="'+esc(v.id)+'">SAVE</button><button class="bt g px sm" data-gc="1">CANCEL</button></div></div>'}
-var act=(!rep&&cu?'<button class="bt g px sm" data-gr="'+esc(v.id)+'">REPLY</button>':'')+(mine?'<button class="bt g px sm" data-ge="'+esc(v.id)+'">EDIT</button>':'')+(canDel?'<button class="bt d px sm" data-gd="'+esc(v.id)+'">DELETE</button>':'');
+var act=(!rep&&cu?'<button class="bt g px sm" data-gr="'+esc(v.id)+'">REPLY</button>':'')+(mine?'<button class="bt g px sm" data-ge="'+esc(v.id)+'">EDIT</button>':'')+(owner&&!rep?'<button class="bt g px sm" data-gp="'+esc(v.id)+'">'+(v.p?'공개로':'비밀로')+'</button>':'')+(canDel?'<button class="bt d px sm" data-gd="'+esc(v.id)+'">DELETE</button>':'');
 return '<div class="'+cl+'"><b>'+(rep?'↳ ':'')+esc(v.n||"익명")+'</b><small>'+dt+'</small>'+(v.p&&!rep?'<span class="lock px">🔒 SECRET</span>':'')+'<br>'+br(v.m)+(act?'<div class="ga">'+act+'</div>':'')+'</div>'}
 gl.innerHTML=tops.map(function(v){
 var h='<div class="gt">'+item(v,0)+(kids[v.id]||[]).map(function(r){return item(r,1)}).join("");
@@ -543,6 +625,7 @@ if(d.ge){editG=d.ge;replyG=null;drawG();return}
 if(d.gc){editG=null;drawG();return}
 if(d.gr){replyG=d.gr;editG=null;drawG();if($("gr_m"))$("gr_m").focus();return}
 if(d.grc){replyG=null;drawG();return}
+if(d.gp){var pv=GD[d.gp],np=!pv.p,w2=db.batch();w2.update(gcol.doc(pv.id),{p:np});gArr().forEach(function(x){if(x.r===pv.id)w2.update(gcol.doc(x.id),{p:np})});try{await w2.commit()}catch(x){b.textContent="실패"}return}
 if(d.gsend){var pa=GD[d.gsend],rm=$("gr_m").value.trim();if(!rm||!pa||!cu)return;b.disabled=true;
 var nk=($("gn").value.trim()||cu.displayName||"익명").slice(0,14);
 try{await gcol.add({n:nk,m:rm,at:Date.now(),uid:cu.uid,p:!!pa.p,r:pa.id,pu:pa.uid||""});replyG=null}catch(x){b.textContent="실패";b.disabled=false;return}
